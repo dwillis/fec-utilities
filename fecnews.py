@@ -1,6 +1,19 @@
 #!/usr/bin/python
 """
 Scraping the FEC's news releases to produce an RSS feed using regular expressions. Based on a script by Sam Ruby. The RSS feed is produced using print statements and is RSS 0.91. Recent changes to the script include support for relative urls and the elimination of extraneous whitespace. Running this script using versions of Python before 2.3 require importing sre as re and resetting the maximum recursion limit.
+
+The MIT License
+
+Copyright (c) 2008 Derek Willis
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
 """
 __author__ = "Derek Willis <dwillis@gmail.com>"
 __date__ = "$Date: 2008/05/19 $"
