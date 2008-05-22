@@ -26,13 +26,21 @@ import string
 import urlparse
 import datetime
 
+d = datetime.date.today()
+dm = str(d.month).zfill(2)
+dd = str(d.day).zfill(2)
+stringdate=dm+'/'+dd+'/'+str(d.year)
+
 
 def fec_news():
     """
-    Scraping the FEC's news releases to produce an RSS feed using regular expressions. 
-    Based on a script by Sam Ruby. The RSS feed is produced using print statements and is RSS 0.91. 
-    Recent changes to the script include support for relative urls and the elimination of extraneous whitespace. 
+    Scraping the FEC's news releases to produce an RSS feed using regular expressions. Based on a script by Sam Ruby. 
+    The script supports relative urls and the elimination of extraneous whitespace, and produces an RSS 0.91 feed.
     Running this script using versions of Python before 2.3 require importing sre as re and resetting the maximum recursion limit.
+    
+    Usage from within Python shell: 
+    from fec import fec_news
+    fec_news()
     """
     # set up needed variables
 
@@ -92,3 +100,23 @@ def fec_news():
       fh.write(rss) 
       fh.close()
 
+def today_elec():
+    """
+    Returns a list of electronic filings for today's date. Could be reworked to create a dictionary using the cmteid as key.
+    Dependency: BeautifulSoup for HTML parsing (http://www.crummy.com/software/BeautifulSoup/)
+    """
+    from BeautifulSoup import BeautifulSoup
+    params = {'date':stringdate}
+    txt=urllib.urlopen("http://query.nictusa.com/cgi-bin/dcdev/forms/", urllib.urlencode(params)).read()
+    soup = BeautifulSoup(txt)
+    filings = soup.findAll('dt')
+    for cmte in filings:
+        name = cmte('h4')[0]('a')[0].contents[0]
+        number_of_filings = len(cmte.contents)/6 # each filing has six elements
+        i = 5  # the fifth element in a filing is its title
+        todays_filings = []
+        for filing in range(number_of_filings):
+            title = cmte.contents[i]
+            todays_filings.append(name+title)
+            i += 6
+    return todays_filings
