@@ -110,13 +110,13 @@ def today_elec():
     txt=urllib.urlopen("http://query.nictusa.com/cgi-bin/dcdev/forms/", urllib.urlencode(params)).read()
     soup = BeautifulSoup(txt)
     filings = soup.findAll('dt')
+    today = []
     for cmte in filings:
         name = cmte('h4')[0]('a')[0].contents[0]
         number_of_filings = len(cmte.contents)/6 # each filing has six elements
         i = 5  # the fifth element in a filing is its title
-        todays_filings = []
         for filing in range(number_of_filings):
             title = cmte.contents[i]
-            todays_filings.append(name+title)
+            today.append(name+title)
             i += 6
-    return todays_filings
+    return today
