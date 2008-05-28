@@ -109,7 +109,22 @@ def latest_filings():
     from fec import latest_news
     latest_news()
     """
-    from BeautifulSoup import BeautifulSoup
+    try:
+        from BeautifulSoup import BeautifulSoup
+    except ImportError:
+        print """
+              IMPORT ERROR: Required Beautiful Soup module not found.
+               
+              Installation instructions:
+               
+              If you have easy_install, enter
+              "sudo easy_install Beautiful Soup"
+              via your shell.
+               
+              Otherwise, the source can be downloaded from
+              http://www.crummy.com/software/BeautifulSoup/
+              """
+        sys.exit()
     # Set the date for the URL string
     d = datetime.date.today()
     dm = str(d.month).zfill(2)
@@ -187,4 +202,3 @@ def make_rss_20(title, description, data, file_name):
     fh.close()
     
     
-
