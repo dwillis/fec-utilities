@@ -100,7 +100,7 @@ def latest_news():
 def latest_filings():
     """
     Returns a list of electronic filings for today's date
-    and print them to RSS.
+    and print them out as RSS.
     
     Dependency: BeautifulSoup for HTML parsing
     (http://www.crummy.com/software/BeautifulSoup/)
@@ -118,7 +118,7 @@ def latest_filings():
               Installation instructions:
                
               If you have easy_install, enter
-              "sudo easy_install Beautiful Soup"
+              "sudo easy_install BeautifulSoup"
               via your shell.
                
               Otherwise, the source can be downloaded from
