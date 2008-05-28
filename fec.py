@@ -124,7 +124,7 @@ def latest_filings():
               Otherwise, the source can be downloaded from
               http://www.crummy.com/software/BeautifulSoup/
               """
-        sys.exit()
+        raise SystemExit
     # Set the date for the URL string
     d = datetime.date.today()
     dm = str(d.month).zfill(2)
