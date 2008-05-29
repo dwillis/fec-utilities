@@ -171,7 +171,53 @@ def latest_filings():
     # Transform our data list to RSS 2.0
     make_rss_20('Latest FEC Filings', 'Committee finance reports.',
                 data, 'latest_filings.xml')
-            
+
+
+def cand_summary_by_state(year, state):
+    """
+    Partially working function to return summary
+    numbers for candidates from a state for an 
+    election year. Bombs out on first House candidate.
+    
+    Dependency: BeautifulSoup for HTML parsing
+    (http://www.crummy.com/software/BeautifulSoup/)
+    
+    """
+    try:
+        from BeautifulSoup import BeautifulSoup
+    except ImportError:
+        print """
+              IMPORT ERROR: Required Beautiful Soup module not found.
+               
+              Installation instructions:
+               
+              If you have easy_install, enter
+              "sudo easy_install BeautifulSoup"
+              via your shell.
+               
+              Otherwise, the source can be downloaded from
+              http://www.crummy.com/software/BeautifulSoup/
+              """
+        raise SystemExit
+    params = { 'dbyear': int(str(year)[3]), 'state': state }
+    base_url = 'http://herndon1.sdrdc.com/cgi-bin/cancomsrs/'
+    txt=urllib.urlopen(base_url, urllib.urlencode(params)).read()
+    soup = BeautifulSoup(txt)
+    t = soup.table.contents
+    data = []
+    for row in t[3:]:
+        name = row.contents[0].a.contents[0]
+        office = row.contents[1].a.contents[0]
+        receipts = row.contents[2].contents[0]
+        spent = row.contents[3].contents[0]
+        cash = row.contents[4].contents[0]
+        debt = row.contents[5].contents[0]
+        date = row.contents[6].contents[0]
+        record = (name, office, receipts, spent, cash, debt, date)
+        data.append(record)
+    return data
+        
+
 def make_rss_20(title, description, data, file_name):
     """
     Returns a list of electronic filings for a given committee, using its C-number passed in to the function.
