@@ -104,6 +104,7 @@ def today_elec():
     """
     Returns a list of electronic filings for today's date. Could be reworked to create a dictionary using the cmteid as key.
     Dependency: BeautifulSoup for HTML parsing (http://www.crummy.com/software/BeautifulSoup/)
+    Usage: today_elec()
     """
     from BeautifulSoup import BeautifulSoup
     params = {'date':stringdate}
@@ -120,3 +121,16 @@ def today_elec():
             today.append(name+title)
             i += 6
     return today
+
+def cmte_elec(cmte):
+    """
+    Returns a list of electronic filings for a given committee, using its C-number passed in to the function.
+    Dependency: BeautifulSoup for HTML parsing (http://www.crummy.com/software/BeautifulSoup/)
+    Usage: cmte_elec('C00224691')
+    """
+    from BeautifulSoup import BeautifulSoup
+    params = {'comid':cmte}
+    txt=urllib.urlopen("http://query.nictusa.com/cgi-bin/dcdev/forms/", urllib.urlencode(params)).read()
+    soup = BeautifulSoup(txt)
+    
+    
