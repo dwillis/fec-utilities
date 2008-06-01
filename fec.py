@@ -55,7 +55,6 @@ def latest_news():
     year = date.year
     base_url = 'http://www.fec.gov/press/press%s/' % year
     url = base_url + '%sNewsReleases.shtml' % year
-    file = 'fecnews.xml'
 
     # read the content of the FEC's press page
     try:
@@ -68,9 +67,7 @@ def latest_news():
     #define regular expression to grab link, date and title from FEC news
     #releases page, using DOTALL to find multiline text. Since urls are
     #internal, we need to add a prefix to the link for the RSS feed.
-    news = re.compile("""valign=.top.>(.*?\d\d\d\d).?</td>.*? +
-                      <td.valign=.top.>.*?<a href=.(.*?).>(.*?)</a>.*? +
-                      </td>.*?</tr>""", re.DOTALL)
+    news = re.compile("""valign=.top.>(.*?\d\d\d\d).?</td>.*?<td.valign=.top.>.*?<a href=.(.*?).>(.*?)</a>.*?</td>.*?</tr>""", re.DOTALL)
 
     #remove additional whitespace like linebreaks and returns from HTML code.
     page = ' '.join(page.split())
@@ -94,20 +91,21 @@ def latest_news():
         # Append to our data list
         data.append(record)
     # Transform our data list to RSS 2.0
-    make_rss_20('Latest FEC News', 'Press releases and announcements.',
-                data, 'latest_news.xml')
+    make_rss_20('Latest FEC News', 'Press releases and announcements.', data, 'latest_news.xml')
 
-def latest_filings():
+def latest_filings(cmte=None):
     """
     Returns a list of electronic filings for today's date
-    and print them out as RSS.
+    and print them out as RSS. If a committee C-number is given,
+    then instead returns a list of electronic filings for that committee.
     
     Dependency: BeautifulSoup for HTML parsing
     (http://www.crummy.com/software/BeautifulSoup/)
     
     Usage from within Python shell: 
     from fec import latest_news
-    latest_news()
+    latest_filings()
+    latest_filings('C00260547')
     """
     try:
         from BeautifulSoup import BeautifulSoup
@@ -130,7 +128,10 @@ def latest_filings():
     dm = str(d.month).zfill(2)
     dd = str(d.day).zfill(2)
     stringdate=dm+'/'+dd+'/'+str(d.year)
-    params = {'date':stringdate}
+    if cmte:
+        params = {'comid':cmte}
+    else:
+        params = {'date':stringdate}
     base_url = 'http://query.nictusa.com/cgi-bin/dcdev/forms/'
     # Open the URL, pass the HTML to Beautiful Soup
     txt=urllib.urlopen(base_url, urllib.urlencode(params)).read()
@@ -169,8 +170,7 @@ def latest_filings():
         # Append to our data list
         data.append(record)
     # Transform our data list to RSS 2.0
-    make_rss_20('Latest FEC Filings', 'Committee finance reports.',
-                data, 'latest_filings.xml')
+    make_rss_20('Latest FEC Filings', 'Committee finance reports.', data, 'latest_filings.xml')
 
 
 def cand_summary_by_state(year, state):
@@ -220,9 +220,9 @@ def cand_summary_by_state(year, state):
 
 def make_rss_20(title, description, data, file_name):
     """
-    Returns a list of electronic filings for a given committee, using its C-number passed in to the function.
+    Returns a list of electronic filings for today or a given committee, using its C-number passed in to the function.
     Dependency: BeautifulSoup for HTML parsing (http://www.crummy.com/software/BeautifulSoup/)
-    Usage: cmte_elec('C00224691')
+    
     Prints out data from both scrapes according RSS 2.0 standards
     http://en.wikipedia.org/wiki/RSS_(file_format)#RSS_2.0
     """
