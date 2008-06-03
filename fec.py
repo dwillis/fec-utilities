@@ -93,11 +93,10 @@ def latest_news():
     # Transform our data list to RSS 2.0
     make_rss_20('Latest FEC News', 'Press releases and announcements.', data, 'latest_news.xml')
 
-def latest_filings(cmte=None):
+def latest_filings():
     """
     Returns a list of electronic filings for today's date
-    and print them out as RSS. If a committee C-number is given,
-    then instead returns a list of electronic filings for that committee.
+    and print them out as RSS.
     
     Dependency: BeautifulSoup for HTML parsing
     (http://www.crummy.com/software/BeautifulSoup/)
@@ -105,7 +104,6 @@ def latest_filings(cmte=None):
     Usage from within Python shell: 
     from fec import latest_news
     latest_filings()
-    latest_filings('C00260547')
     """
     try:
         from BeautifulSoup import BeautifulSoup
@@ -128,10 +126,7 @@ def latest_filings(cmte=None):
     dm = str(d.month).zfill(2)
     dd = str(d.day).zfill(2)
     stringdate=dm+'/'+dd+'/'+str(d.year)
-    if cmte:
-        params = {'comid':cmte}
-    else:
-        params = {'date':stringdate}
+    params = {'date':stringdate}
     base_url = 'http://query.nictusa.com/cgi-bin/dcdev/forms/'
     # Open the URL, pass the HTML to Beautiful Soup
     txt=urllib.urlopen(base_url, urllib.urlencode(params)).read()
@@ -171,6 +166,61 @@ def latest_filings(cmte=None):
         data.append(record)
     # Transform our data list to RSS 2.0
     make_rss_20('Latest FEC Filings', 'Committee finance reports.', data, 'latest_filings.xml')
+
+
+def cmte_filings(cmte):
+    """
+    Returns a list of electronic filings for a given
+    committee's C-number and print them out as RSS.
+    
+    Dependency: BeautifulSoup for HTML parsing
+    (http://www.crummy.com/software/BeautifulSoup/)
+    
+    Usage from within Python shell: 
+    from fec import latest_news
+    cmte_filings('C00260547')
+    """
+    try:
+        from BeautifulSoup import BeautifulSoup
+    except ImportError:
+        print """
+              IMPORT ERROR: Required Beautiful Soup module not found.
+               
+              Installation instructions:
+               
+              If you have easy_install, enter
+              "sudo easy_install BeautifulSoup"
+              via your shell.
+               
+              Otherwise, the source can be downloaded from
+              http://www.crummy.com/software/BeautifulSoup/
+              """
+        raise SystemExit
+    # Set the date for the URL string
+    params = {'comid':cmte}
+    base_url = 'http://query.nictusa.com/cgi-bin/dcdev/forms/'
+    # Open the URL, pass the HTML to Beautiful Soup
+    txt=urllib.urlopen(base_url, urllib.urlencode(params)).read()
+    soup = BeautifulSoup(txt)
+    # Snatch all the <dt> tags
+    filings = soup.findAll('dt')
+    # Pull the committee name and cut off c_id
+    committee = filings[0].a.contents[0]
+    title = re.split(' - ', committee)[0]
+    # set up the list to hold filings
+    data = []
+    # regex to match filings - no soup here!
+    results = re.compile("""[<BR>]?.*?<A HREF=\'/cgi-bin/dcdev/forms/(C[0-9]*?/[0-9]*?)/\'>(?:<FONT COLOR ="#990000">)?View(?:</FONT>)?</A>&nbsp;&nbsp;&nbsp;&nbsp;<A HREF=\'/cgi-bin/dcdev/forms/DL/[0-9].*/\'>(?:<FONT COLOR ="#990000">)?Download(?:</FONT>)?</A>&nbsp;&nbsp;.*?(Form F.*?)..-.(?:period.(.*?)-(.*?),.)?filed.(.*?).-.(.*?)(?:<BR>&nbsp;&nbsp;&nbsp;<B>Amended</B> by <A HREF=\'/cgi-bin/dcdev/forms/C[0-9]*?/([0-9]*?)/\'>.*?</A>)?\n""")
+    for (link,form,periodstart,periodend,filedate,filing,amend) in results.findall(txt):
+        date_date = time.strptime(filedate, '%m/%d/%Y')
+        pubDate = time.strftime('%a, %d %b %Y 00:00:00 GMT', date_date)
+        # Collect in a tuple
+        record = (title, urlparse.urljoin(base_url,link), filing, pubDate)
+        # Append to our data list
+        data.append(record)
+    # Transform our data list to RSS 2.0 inserting cmte id into title
+    intro = 'Latest FEC Filings from %s' % cmte
+    make_rss_20(intro, 'Committee finance reports.', data, 'latest_cmte_filings.xml')
 
 
 def cand_summary_by_state(year, state):
