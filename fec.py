@@ -22,7 +22,7 @@ May 28, 2008
 
 """
 __author__ = "Derek Willis <dwillis@gmail.com>"
-__date__ = "$Date: 2008/05/19 $"
+__date__ = "$Date: 2008/06/22 $"
 __version__ = "$Revision: 2.2 $"
 
 import re
