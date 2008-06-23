@@ -32,6 +32,7 @@ import string
 import urlparse
 import time
 import datetime
+import csv
 
 def latest_news():
     """
@@ -221,6 +222,46 @@ def cmte_filings(cmte):
     # Transform our data list to RSS 2.0 inserting cmte id into title
     intro = 'Latest FEC Filings from %s' % cmte
     make_rss_20(intro, 'Committee finance reports.', data, 'latest_cmte_filings.xml')
+
+
+def latest_electioneering_filings():
+    """
+    Returns a list of the most recent electioneering communications filings
+    with the FEC by processing a CSV file on ftp.fec.gov and printing the 10
+    most recent filings out as RSS 2.0.
+    
+    Uses a slightly altered version of the MONTHS_3 format used by Django to parse dates from FEC file.    
+    """
+    try:
+        url = "ftp://ftp.fec.gov/FEC/electioneering.csv"
+        ec = urllib.urlopen(url)
+        reader = csv.DictReader(ec)
+        reader.next()
+    except IOError:
+        print "Network Error: File cannot be accessed."
+        raise SystemExit
+    
+    # dictionary mapping three-letter months to Python month numbers for use in building Python dates
+    MONTHS_3 = { 'JAN': 1, 'FEB': 2, 'MAR': 3, 'APR': 4, 'MAY': 5, 'JUN': 6, 'JUL': 7, 'AUG':8, 'SEP':9, 'OCT':10, 'NOV':11, 'DEC':12}
+    
+    base_url = 'http://images.nictusa.com/cgi-bin/fecimg/?_'
+    data = []
+    for row in reader:
+        d = row[' RECEIPT_DT'].strip().split('-')
+        d[1] = str(MONTHS_3[d[1]])
+        date_date = time.strptime("-".join(d), '%d-%m-%y')
+        if row[' PUBLIC_DISTRIBUTION_DT '] == '':
+            dd = d
+        else:
+            dd = row[' PUBLIC_DISTRIBUTION_DT '].strip().split('-')
+            dd[1] = str(MONTHS_3[dd[1]])
+        dist_date = time.strftime("%b %d, %Y", time.strptime("-".join(dd), '%d-%m-%y')) # the date the ad(s) aired.
+        pubDate = time.strftime('%a, %d %b %Y 00:00:00 GMT', date_date) # the filing date
+        record = (row[' FILER_NAME '], base_url+row[' BEGIN_IMAGE_NUM ']+'+0', "Amount Spent: $"+ row[' TOTAL_DISBURSEMENTS_THIS_STMT '] + " first airing on "+ dist_date, pubDate)
+        data.append(record)
+    data = data[:10] # limits feed to 10 most recent.
+    intro = "Latest Electioneering Communications filings"
+    make_rss_20(intro, 'Electioneering communications', data, 'elect_comm.xml')
 
 
 def cand_summary_by_state(year, state):
