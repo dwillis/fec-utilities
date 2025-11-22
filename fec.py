@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 """
 Library of functions to process and handle Federal Election Commission data
 available from http://www.fec.gov and its FTP site, ftp://ftp.fec.gov.
@@ -23,16 +23,17 @@ May 28, 2008
 """
 __author__ = "Derek Willis <dwillis@gmail.com>"
 __date__ = "$Date: 2008/06/22 $"
-__version__ = "$Revision: 2.2 $"
+__version__ = "$Revision: 3.0 $"
 
 import re
-import urllib
+import urllib.request
+import urllib.parse
+import urllib.error
 import sys
-import string
-import urlparse
 import time
 import datetime
 import csv
+import io
 
 def latest_news():
     """
@@ -59,7 +60,7 @@ def latest_news():
 
     # read the content of the FEC's press page
     try:
-      page=urllib.urlopen(url).read()
+      page=urllib.request.urlopen(url).read().decode('utf-8')
     except IOError:
       page=''
     except AssertionError:
@@ -81,7 +82,7 @@ def latest_news():
     data = []
     for (date_string, link, title) in matches:
         # combine the base_url with the tail_url
-        link = urlparse.urljoin(base_url,link)
+        link = urllib.parse.urljoin(base_url,link)
         # Leave the description field null for the time being
         description = ''
         # Pull out the date and reformat it for RSS
@@ -107,20 +108,20 @@ def latest_filings():
     latest_filings()
     """
     try:
-        from BeautifulSoup import BeautifulSoup
+        from bs4 import BeautifulSoup
     except ImportError:
-        print """
+        print("""
               IMPORT ERROR: Required Beautiful Soup module not found.
-               
+
               Installation instructions:
-               
-              If you have easy_install, enter
-              "sudo easy_install BeautifulSoup"
+
+              If you have pip, enter
+              "pip install beautifulsoup4"
               via your shell.
-               
+
               Otherwise, the source can be downloaded from
-              http://www.crummy.com/software/BeautifulSoup/
-              """
+              https://www.crummy.com/software/BeautifulSoup/
+              """)
         raise SystemExit
     # Set the date for the URL string
     d = datetime.date.today()
@@ -130,8 +131,10 @@ def latest_filings():
     params = {'date':stringdate}
     base_url = 'http://query.nictusa.com/cgi-bin/dcdev/forms/'
     # Open the URL, pass the HTML to Beautiful Soup
-    txt=urllib.urlopen(base_url, urllib.urlencode(params)).read()
-    soup = BeautifulSoup(txt)
+    data = urllib.parse.urlencode(params).encode('utf-8')
+    req = urllib.request.Request(base_url, data)
+    txt=urllib.request.urlopen(req).read()
+    soup = BeautifulSoup(txt, 'html.parser')
     # Snatch all the <dt> tags
     filings = soup.findAll('dt')
     today = []
@@ -159,10 +162,10 @@ def latest_filings():
         # Pull out the date and reformat it for RSS
         # See: http://feedvalidator.org/docs/error/InvalidRFC2822Date.html
         date_string = re.split(' - ', form)[1].split('filed ')[1]
-        date_date = time.strptime(string.strip(date_string), '%m/%d/%Y')
+        date_date = time.strptime(date_string.strip(), '%m/%d/%Y')
         pubDate = time.strftime('%a, %d %b %Y 00:00:00 GMT', date_date)
         # Collect in a tuple
-        record = (title, urlparse.urljoin(base_url,link), description, pubDate)
+        record = (title, urllib.parse.urljoin(base_url,link), description, pubDate)
         # Append to our data list
         data.append(record)
     # Transform our data list to RSS 2.0
@@ -182,27 +185,29 @@ def cmte_filings(cmte):
     cmte_filings('C00260547')
     """
     try:
-        from BeautifulSoup import BeautifulSoup
+        from bs4 import BeautifulSoup
     except ImportError:
-        print """
+        print("""
               IMPORT ERROR: Required Beautiful Soup module not found.
-               
+
               Installation instructions:
-               
-              If you have easy_install, enter
-              "sudo easy_install BeautifulSoup"
+
+              If you have pip, enter
+              "pip install beautifulsoup4"
               via your shell.
-               
+
               Otherwise, the source can be downloaded from
-              http://www.crummy.com/software/BeautifulSoup/
-              """
+              https://www.crummy.com/software/BeautifulSoup/
+              """)
         raise SystemExit
     # Set the date for the URL string
     params = {'comid':cmte}
     base_url = 'http://query.nictusa.com/cgi-bin/dcdev/forms/'
     # Open the URL, pass the HTML to Beautiful Soup
-    txt=urllib.urlopen(base_url, urllib.urlencode(params)).read()
-    soup = BeautifulSoup(txt)
+    data = urllib.parse.urlencode(params).encode('utf-8')
+    req = urllib.request.Request(base_url, data)
+    txt=urllib.request.urlopen(req).read()
+    soup = BeautifulSoup(txt, 'html.parser')
     # Snatch all the <dt> tags
     filings = soup.findAll('dt')
     # Pull the committee name and cut off c_id
@@ -216,7 +221,7 @@ def cmte_filings(cmte):
         date_date = time.strptime(filedate, '%m/%d/%Y')
         pubDate = time.strftime('%a, %d %b %Y 00:00:00 GMT', date_date)
         # Collect in a tuple
-        record = (title, urlparse.urljoin(base_url,link), filing, pubDate)
+        record = (title, urllib.parse.urljoin(base_url,link), filing, pubDate)
         # Append to our data list
         data.append(record)
     # Transform our data list to RSS 2.0 inserting cmte id into title
@@ -234,11 +239,12 @@ def latest_electioneering_filings():
     """
     try:
         url = "ftp://ftp.fec.gov/FEC/electioneering.csv"
-        ec = urllib.urlopen(url)
+        response = urllib.request.urlopen(url)
+        ec = io.TextIOWrapper(response, encoding='utf-8')
         reader = csv.DictReader(ec)
-        reader.next()
+        next(reader)
     except IOError:
-        print "Network Error: File cannot be accessed."
+        print("Network Error: File cannot be accessed.")
         raise SystemExit
     
     # dictionary mapping three-letter months to Python month numbers for use in building Python dates
@@ -275,25 +281,27 @@ def cand_summary_by_state(year, state):
     
     """
     try:
-        from BeautifulSoup import BeautifulSoup
+        from bs4 import BeautifulSoup
     except ImportError:
-        print """
+        print("""
               IMPORT ERROR: Required Beautiful Soup module not found.
-               
+
               Installation instructions:
-               
-              If you have easy_install, enter
-              "sudo easy_install BeautifulSoup"
+
+              If you have pip, enter
+              "pip install beautifulsoup4"
               via your shell.
-               
+
               Otherwise, the source can be downloaded from
-              http://www.crummy.com/software/BeautifulSoup/
-              """
+              https://www.crummy.com/software/BeautifulSoup/
+              """)
         raise SystemExit
     params = { 'dbyear': int(str(year)[3]), 'state': state }
     base_url = 'http://herndon1.sdrdc.com/cgi-bin/cancomsrs/'
-    txt=urllib.urlopen(base_url, urllib.urlencode(params)).read()
-    soup = BeautifulSoup(txt)
+    data = urllib.parse.urlencode(params).encode('utf-8')
+    req = urllib.request.Request(base_url, data)
+    txt=urllib.request.urlopen(req).read()
+    soup = BeautifulSoup(txt, 'html.parser')
     t = soup.table.contents
     data = []
     for row in t[3:]:
